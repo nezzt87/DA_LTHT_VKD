@@ -4,6 +4,10 @@
 #include <BH1750.h>
 #include "DHT.h"
 #include <ArduinoJson.h>
+#include <Servo.h>
+#include <time.h>
+
+
 // Set these to run example.
 #define FIREBASE_HOST "da-ltht-vdk-12.firebaseio.com"
 #define FIREBASE_AUTH "token_or_secret"
@@ -11,13 +15,21 @@
 #define WIFI_PASSWORD "15032009"
 #define DHTTYPE DHT11   // DHT 11
 #define DHTPIN D5
+#define TIMEZONE 7
 
 DHT dht(DHTPIN, DHTTYPE);
 BH1750 lightMeter(0x23);
 StaticJsonBuffer<256> jb;
 JsonObject& obj = jb.createObject();
+Servo myservo;  // create servo object to control a servo
+// twelve servo objects can be created on most boards
+
+int dst = 0;
+
 void setup() {
   Serial.begin(9600);
+  Serial.setDebugOutput(true);
+  
   dht.begin();
   // Initialize the I2C bus (BH1750 library doesn't do this automatically)
   Wire.begin(D4, D3);
@@ -40,10 +52,28 @@ void setup() {
   Serial.println(WiFi.localIP());
 
   Firebase.begin(FIREBASE_HOST);
+  myservo.attach(4);  // attaches the servo on GIO4 to the servo object ~ D4
+  int pos;
+
+  for (pos = 0; pos <= 180; pos += 1) { // goes from 0 degrees to 180 degrees
+    // in steps of 1 degree
+    myservo.write(pos);              // tell servo to go to position in variable 'pos'
+    delay(15);                       // waits 15ms for the servo to reach the position
+  }
+  for (pos = 180; pos >= 0; pos -= 1) { // goes from 180 degrees to 0 degrees
+    myservo.write(pos);              // tell servo to go to position in variable 'pos'
+    delay(15);                       // waits 15ms for the servo to reach the position
+  }
+ configTime(TIMEZONE * 3600, 0, "pool.ntp.org", "time.nist.gov");
+  Serial.println("\nWaiting for time");
+  while (!time(nullptr)) {
+    Serial.print(".");
+    delay(1000);
+  }
+  Serial.println("");
 }
 
-int n = 0;
-
+char buffer[80];
 void loop() {
 
   float lux = lightMeter.readLightLevel();
@@ -54,14 +84,23 @@ void loop() {
     Serial.println("Failed to read from DHT sensor!");
     return;
   }
-  n = millis()/10000 + 1;
   obj["Nhietdo"] = t;
+  
   obj["DoSang"] = lux;
-  Firebase.set(String("/log/" + String(n)), obj);
+  
+  struct tm * timeinfo;
+  time_t now = time(nullptr);
+  Serial.println(ctime(&now));
+  time (&now);
+  timeinfo = localtime (&now);
+  strftime (buffer,80,"%d%m%y/%H%M%S",timeinfo);
+  
+  
+  Firebase.set(String("/log/" + String(buffer)), obj);
   if (Firebase.failed()) {
-      Serial.print("setting /number failed:");
-      Serial.println(Firebase.error());  
-      return;
+    Serial.print("setting /number failed:");
+    Serial.println(Firebase.error());
+    return;
   }
   delay(10000);
 }

@@ -4,9 +4,12 @@
 #include <BH1750.h>
 #include "DHT.h"
 #include <ArduinoJson.h>
-#include <Servo.h>
 #include <time.h>
 /*
+   ESP without Servo
+
+
+
    BH1750
    SCL <--> D3
    SDA <--> D4
@@ -14,9 +17,6 @@
    DHT11
    DHTPIN <--> D5
 
-   Servo
-
-   attach <--> D2 (GPIO4)
 
    con lai thi 3.3V voi GND
 */
@@ -36,7 +36,6 @@ BH1750 lightMeter(0x23);
 StaticJsonBuffer<256> jb;
 JsonObject& obj = jb.createObject();
 
-Servo myservo;  // create servo object to control a servo
 
 int dst = 0;
 
@@ -65,20 +64,7 @@ void setup() {
   Serial.println(WiFi.localIP());
   //connect to Firebase
   Firebase.begin(FIREBASE_HOST);
-  //Test servo
-  myservo.attach(4);  // attaches the servo on GIO4 to the servo object ~ D4
-  int pos;
-
-  for (pos = 0; pos <= 180; pos += 1) { // goes from 0 degrees to 180 degrees
-    // in steps of 1 degree
-    myservo.write(pos);              // tell servo to go to position in variable 'pos'
-    delay(15);                       // waits 15ms for the servo to reach the position
-  }
-  for (pos = 180; pos >= 0; pos -= 1) { // goes from 180 degrees to 0 degrees
-    myservo.write(pos);              // tell servo to go to position in variable 'pos'
-    delay(15);                       // waits 15ms for the servo to reach the position
-  }
-
+  
   // config time
   configTime(TIMEZONE * 3600, 0, "pool.ntp.org", "time.nist.gov");
   Serial.println("\nWaiting for time");
@@ -92,7 +78,7 @@ void setup() {
 char buffer[80];
 
 void loop() {
-  
+
   float lux = lightMeter.readLightLevel();
   // Read temperature as Celsius (the default)
   float t = dht.readTemperature();
@@ -102,15 +88,15 @@ void loop() {
     return;
   }
   
-  obj["Nhietdo"] = t;
-  obj["DoSang"] = lux;
+  obj["InsideTemp"] = t;
+  obj["InsideLux"] = lux;
   /*
-   * Get date and time
-   * Example /code/GetTime/GetTime.ino
-   * 
-   * strftime example
-   * http://www.cplusplus.com/reference/ctime/strftime/
-   */
+     Get date and time
+     Example /code/GetTime/GetTime.ino
+
+     strftime example
+     http://www.cplusplus.com/reference/ctime/strftime/
+  */
   struct tm * timeinfo;
   time_t now = time(nullptr);
   Serial.println(ctime(&now));
@@ -125,17 +111,7 @@ void loop() {
     Serial.println(Firebase.error());
     return;
   }
-   int pos;
 
-  for (pos = 0; pos <= 180; pos += 1) { // goes from 0 degrees to 180 degrees
-    // in steps of 1 degree
-    myservo.write(pos);              // tell servo to go to position in variable 'pos'
-    delay(15);                       // waits 15ms for the servo to reach the position
-  }
-  for (pos = 180; pos >= 0; pos -= 1) { // goes from 180 degrees to 0 degrees
-    myservo.write(pos);              // tell servo to go to position in variable 'pos'
-    delay(15);                       // waits 15ms for the servo to reach the position
-  }
   //Cach 1 phut thi thu thap du lieu 1 lan
   delay(60000);
 }

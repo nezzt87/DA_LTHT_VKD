@@ -123,8 +123,8 @@ void loop() {
 
 
   obj["Servo"] = pos;
-  obj["Nhietdo"] = t;
-  obj["DoSang"] = lux;
+  obj["OutsideTemp"] = t;
+  obj["OutsideLux"] = lux;
   /*
      Get date and time
      Example /code/GetTime/GetTime.ino

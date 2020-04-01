@@ -140,7 +140,7 @@ void loop() {
   strftime (buffer, 80, "%d%m%y/%H%M", timeinfo);
 
   // Gui du lieu len firebase
-  Firebase.set(String("/log/" + String(buffer)), obj);
+  Firebase.set(String("/log/" + String(buffer) + "/outside"), obj);
   if (Firebase.failed()) {
     Serial.print("setting /number failed:");
     Serial.println(Firebase.error());
